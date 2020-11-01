@@ -2,7 +2,9 @@
 Nutze '?steckbriefhilfe' für Hilfe
 
 Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit '{ "bottoken": "bottoken" }' existieren.
+Die Gesteckbrieftrolle muss in ROLE_GESTECKBRIEFT_ID und die Serverid in GUILD_ID eingetragen werden.
 Dann kann über '?setsteckbriefchannel' der Steckbriefkanal von jemandem mit 'MANAGE_GUILD' festgelegt werden.
+
 
 TODO SetGuildID, SetRoleID
 */
@@ -17,8 +19,8 @@ steckbriefe = require("./steckbriefeids.json");
 var STECKBRIEF_CHANNEL = steckbriefe.steckbriefchannel || console.log("Steckbriefchannel nicht definiert");
 const TOKEN = steckbriefe.bottoken || console.log("Bottoken nicht definiert");
 
-const GUILD_ID = "765192487227883530";
-const ROLE_GESTECKBRIEFT_ID = "768085314215608330";
+const GUILD_ID = "xxx";
+const ROLE_GESTECKBRIEFT_ID = "yyy";
 const PREFIX = "Steckbrief:";
 
 client.login(TOKEN)
