@@ -3,7 +3,7 @@ Nutze '?steckbriefhilfe' für Hilfe in Discord
 
 Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit 
 {
-    "bottoken": "bottoken",
+    "bottoken": "bottoken"
 }
 existieren.
 
