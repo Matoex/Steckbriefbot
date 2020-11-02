@@ -96,12 +96,12 @@ client.on('message', (msg) => {
             updatesentsteckbrief(msg);
 
         } else {
-            addUserRole(msg.author)
+
             var nachricht = processMessage(PREFIX, msg); //Nachricht [Steckbrief als Embed, Steckbrief als Objekt]
             if(nachricht==false){
                 return;
             }
-
+            addUserRole(msg.author)
             client.channels.fetch(STECKBRIEF_CHANNEL).then(function (channel) {
                 channel.send("Der Steckbrief von " + msg.author.toString() + "\n\n", nachricht[0]).then(function (message) {
                     steckbriefe[msg.author.id] = {"messageid": message.id, "steckbrief": nachricht[1]}; //Setze steckbriefe[msg.author.id]
