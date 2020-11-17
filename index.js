@@ -4,6 +4,8 @@ Nutze '?steckbriefhilfe' für Hilfe
 Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit
 {
     "bottoken": "bottoken",
+    "rssurl": "rssurl",
+    "rsschannel": "rsschannel"
 }
 existieren.
 Dann kann über '?setsteckbriefchannel' der Steckbriefkanal von jemandem mit 'MANAGE_GUILD' festgelegt werden.
