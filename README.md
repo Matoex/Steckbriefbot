@@ -2,9 +2,13 @@
 Nutze '?steckbriefhilfe' für Hilfe in Discord
 
 Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit 
+```javascript
 {
-    "bottoken": "bottoken"
+    "bottoken": "bottoken",
+    "rssurl": "rssurl",
+    "rsschannel": "rsschannel"
 }
+```
 existieren.
 Die Gesteckbrieftrolle muss in ROLE_GESTECKBRIEFT_ID und die Serverid in GUILD_ID in index.js eingetragen werden.
 
