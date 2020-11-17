@@ -1,10 +1,15 @@
 /*
 Nutze '?steckbriefhilfe' für Hilfe
 
-Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit '{ "bottoken": "bottoken" }' existieren.
-Die Gesteckbrieftrolle muss in ROLE_GESTECKBRIEFT_ID und die Serverid in GUILD_ID eingetragen werden.
+Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit
+{
+    "bottoken": "bottoken",
+}
+existieren.
 Dann kann über '?setsteckbriefchannel' der Steckbriefkanal von jemandem mit 'MANAGE_GUILD' festgelegt werden.
 
+RSS:
+Die RSSURL wird aboniert, immer wenn ein neuer Eintrag existiert, der im Linkt mit "target=file" startet, wird die Nachricht gesendet und der letzten gesendete Link abgespeichert.
 
 TODO SetGuildID, SetRoleID
 */
@@ -13,21 +18,31 @@ const Discord = require('discord.js');
 var client = new Discord.Client({partials: ['MESSAGE', 'CHANNEL', 'REACTION']})
 const fs = require('fs');
 
+let Parser = require('rss-parser');
+let parser = new Parser();
+
+var schedule = require('node-schedule');
 
 //Lade Steckbriefeids
 steckbriefe = require("./steckbriefeids.json");
 var STECKBRIEF_CHANNEL = steckbriefe.steckbriefchannel || console.log("Steckbriefchannel nicht definiert");
 const TOKEN = steckbriefe.bottoken || console.log("Bottoken nicht definiert");
 
-const GUILD_ID = "xxx";
-const ROLE_GESTECKBRIEFT_ID = "yyy";
+const GUILD_ID = "765192487227883530";
+const ROLE_GESTECKBRIEFT_ID = "768085314215608330";
 const PREFIX = "Steckbrief:";
 
-client.login(TOKEN)
+client.login(TOKEN);
+
+var i = schedule.scheduleJob('* * * * *', function () {
+    reloadrss()
+});
 
 client.on("ready", () => {
     console.log(client.user.username + " gestartet, Channelid: " + STECKBRIEF_CHANNEL + " GuildID: " + GUILD_ID + " ROLE_GESTECKBRIEFT_ID: " + ROLE_GESTECKBRIEFT_ID);
+    reloadrss()
 })
+
 
 client.on('messageUpdate', async (oldMessage, newMessage) => {
     await oldMessage.fetch().then(function (Message) {
@@ -96,9 +111,8 @@ client.on('message', (msg) => {
             updatesentsteckbrief(msg);
 
         } else {
-
             var nachricht = processMessage(PREFIX, msg); //Nachricht [Steckbrief als Embed, Steckbrief als Objekt]
-            if(nachricht==false){
+            if (nachricht == false) {
                 return;
             }
             addUserRole(msg.author)
@@ -141,7 +155,7 @@ function updatesentsteckbrief(msg) {
     }
 
     var nachricht = processMessage(PREFIX, msg); //Nachricht [Steckbrief als Embed, Steckbrief als Objekt]
-    if(nachricht==false){
+    if (nachricht == false) {
         return;
     }
 
@@ -186,9 +200,7 @@ function processMessage(prefix, message) {
         var inhalt = zeile.join(":").trim() //Füge den Array wieder zusammen
 
 
-
-
-        if (inhalt != ''&& thema != '') {
+        if (inhalt != '' && thema != '') {
             switch (thema.toLowerCase()) {
                 case "name": //Der Name wird zum Titel
                     steckbrief.setTitle(inhalt)
@@ -258,34 +270,34 @@ function safeSteckbriefJSON() {
 }
 
 function getSteckbriefHilfe(channelid) {
-    message = "So funktioniert das Steckbriefsystem:\n"+
-        "```Steckbrief:\n"+
-        "Name:\n"+
-        "Geburtstag:\n"+
-        "Geschlecht:\n"+
-        "Religiosität:\n"+
-        " \n"+
-        "aktueller Wohnort:\n"+
-        "urspränglicher Wohnort:\n"+
-        "\n"+
-        "Freizeit:\n"+
-        "Spiele:\n"+
-        "Vereine:\n"+
-        "Musikinstrumente:\n"+
-        "Interessen:\n"+
-        "\n"+
-        "Random Infos:\n"+
-        "Lieblingstier:\n"+
-        "Haustiere:  \n"+
-        "Lieblingsbar:\n"+
-        "Lieblingsurlaubsziel:\n"+
-        "Lieblingsserie/Buch:\n"+
-        "Lieblingsfarbe:\n"+
-        "\n"+
-        "Accountnamen:\n"+
-        "Instagram:\n"+
-        "Steam:\n"+
-        "...\n"+
+    message = "So funktioniert das Steckbriefsystem:\n" +
+        "```Steckbrief:\n" +
+        "Name:\n" +
+        "Geburtstag:\n" +
+        "Geschlecht:\n" +
+        "Religiosität:\n" +
+        " \n" +
+        "aktueller Wohnort:\n" +
+        "urspränglicher Wohnort:\n" +
+        "\n" +
+        "Freizeit:\n" +
+        "Spiele:\n" +
+        "Vereine:\n" +
+        "Musikinstrumente:\n" +
+        "Interessen:\n" +
+        "\n" +
+        "Random Infos:\n" +
+        "Lieblingstier:\n" +
+        "Haustiere:  \n" +
+        "Lieblingsbar:\n" +
+        "Lieblingsurlaubsziel:\n" +
+        "Lieblingsserie/Buch:\n" +
+        "Lieblingsfarbe:\n" +
+        "\n" +
+        "Accountnamen:\n" +
+        "Instagram:\n" +
+        "Steam:\n" +
+        "...\n" +
         "```"
     var e1 = new Discord.MessageEmbed()
         .setColor("#037a90")
@@ -300,13 +312,13 @@ function getSteckbriefHilfe(channelid) {
         .setColor("#ffa500")
         .addField("Was Tun bei Problemen?", "Überprüfe, ob du alle formellen Vorgaben richtig umgesetzt hast, wenn das nicht geholfen hat, kannst du dich einfach an einen Serveradministrator wenden.")
         .setFooter("Credits: Matoex, Stealwonders, ButterToasted, RunningAnanas")
- /*
-    var admin = new Discord.MessageEmbed()
-        .setColor("#ffa500")
-        .addField("Informationen für Administratoren", "Der Bot speichert beim Senden die Nachrichtid der gesendeten Nachricht und verwendet diese ID dann, um die Nachricht zu resolven. Wird die vom Bot gesendete Nachricht gelöscht, sendet der Bot einfach den Steckbrief erneut")
-        .addField("?purge [Anzahl]", "Mit `?purge [Anzahl]` können alle mit 'MANAGE_MESSAGES' `[Anzahl]` letzte Nachrichten löschen.")
-        .setFooter("By Matoex, Stealwonders, ButterToasted, RunningAnanas")
-*/
+    /*
+       var admin = new Discord.MessageEmbed()
+           .setColor("#ffa500")
+           .addField("Informationen für Administratoren", "Der Bot speichert beim Senden die Nachrichtid der gesendeten Nachricht und verwendet diese ID dann, um die Nachricht zu resolven. Wird die vom Bot gesendete Nachricht gelöscht, sendet der Bot einfach den Steckbrief erneut")
+           .addField("?purge [Anzahl]", "Mit `?purge [Anzahl]` können alle mit 'MANAGE_MESSAGES' `[Anzahl]` letzte Nachrichten löschen.")
+           .setFooter("By Matoex, Stealwonders, ButterToasted, RunningAnanas")
+   */
 
 
     client.channels.fetch(channelid).then(function (channel) {
@@ -324,4 +336,30 @@ function getSteckbriefHilfe(channelid) {
         });
 
     });
+}
+
+function reloadrss() {
+    (async () => {
+        let feed = await parser.parseURL(steckbriefe.rssurl);
+        var tmpLink = steckbriefe.lastlink; //letzte gesendete URL
+
+        feed.items.some(item => {
+            if (item.link == tmpLink) { //wenn dieser RSS Eintrag == dem letzten gesendeten, dann abbrechen
+                return true;
+            } else {
+                const current_url = new URL(item.link);
+                const search_params = current_url.searchParams;
+                const id = search_params.get('target');
+                if (id.startsWith("file")) {
+                    //Folgende Bedingung wird also nur ein mal (nur beim 1. neuen Eintrag) aufgerufen.
+                    if (steckbriefe.lastlink == tmpLink) { // Wenn der letzte gesendete Link gleich dem letzten gespeicherten
+                        steckbriefe.lastlink = item.link; //Speichere den ersten Eintrag des RSS als neuen letzten
+                        safeSteckbriefJSON();
+                    }
+                    sendMessageToChannelID(steckbriefe.rsschannel, item.title + ' : ' + item.link)
+                    console.log("rss: "+ item.title + ' : ' + item.link);
+                }
+            }
+        });
+    })();
 }

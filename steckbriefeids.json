@@ -1,3 +1,5 @@
 {
-    "bottoken": "bottoken"
+    "bottoken": "bottoken",
+    "rssurl": "rssurl",
+    "rsschannel": "rsschannel"
 }
