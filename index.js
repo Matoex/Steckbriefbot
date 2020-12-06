@@ -5,15 +5,16 @@ Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit
 {
     "bottoken": "bottoken",
     "rssurl": "rssurl",
-    "rsschannel": "rsschannel"
+    "rsschannel": "rsschannel",
+    "rssaufgabenchannel": "rssaufgabenchannel"
 }
+
 existieren.
 Dann kann über '?setsteckbriefchannel' der Steckbriefkanal von jemandem mit 'MANAGE_GUILD' festgelegt werden.
 
 RSS:
 Die RSSURL wird aboniert, immer wenn ein neuer Eintrag existiert, der im Linkt mit "target=file" startet, wird die Nachricht gesendet und der letzten gesendete Link abgespeichert.
 
-TODO SetGuildID, SetRoleID
 */
 
 const Discord = require('discord.js');
@@ -26,7 +27,8 @@ let parser = new Parser();
 var schedule = require('node-schedule');
 
 //Lade Steckbriefeids
-steckbriefe = require("./steckbriefeids.json");
+steckbriefe = require( __dirname +"/steckbriefeids.json");
+
 var STECKBRIEF_CHANNEL = steckbriefe.steckbriefchannel || console.log("Steckbriefchannel nicht definiert");
 const TOKEN = steckbriefe.bottoken || console.log("Bottoken nicht definiert");
 
@@ -36,13 +38,16 @@ const PREFIX = "Steckbrief:";
 
 client.login(TOKEN);
 
+
 var i = schedule.scheduleJob('* * * * *', function () {
     reloadrss()
 });
 
+
 client.on("ready", () => {
     console.log(client.user.username + " gestartet, Channelid: " + STECKBRIEF_CHANNEL + " GuildID: " + GUILD_ID + " ROLE_GESTECKBRIEFT_ID: " + ROLE_GESTECKBRIEFT_ID);
     reloadrss()
+    // rssdebug();
 })
 
 
@@ -54,6 +59,7 @@ client.on('messageUpdate', async (oldMessage, newMessage) => {
         updatesentsteckbrief(newMessage);
     });
 })
+
 
 client.on('message', (msg) => {
         if (msg.author.bot) {
@@ -129,9 +135,10 @@ client.on('message', (msg) => {
             });
             sendMessageToChannelID(msg.channel.id, "Dein Steckbrief wurde gesendet")
         }
+
+
     }
 );
-
 
 function addUserRole(userid) {// Adde einen User by ID zu der Rolle ROLE_GESTECKBRIEFT_ID
     client.guilds.fetch(GUILD_ID).then(function (Guild) {
@@ -264,7 +271,7 @@ function intToRGB(i) {
 }
 
 function safeSteckbriefJSON() {
-    fs.writeFile("./steckbriefeids.json", JSON.stringify(steckbriefe, null, 4), err => {
+    fs.writeFile(__dirname +"/steckbriefeids.json", JSON.stringify(steckbriefe, null, 4), err => {
         if (err) {
             throw err;
         }
@@ -352,6 +359,53 @@ function reloadrss() {
                 const current_url = new URL(item.link);
                 const search_params = current_url.searchParams;
                 const id = search_params.get('target');
+                if (id.startsWith("file") || id.startsWith("tst") || id.startsWith("mcst")) {
+                    //Folgende Bedingung wird also nur ein mal (nur beim 1. neuen Eintrag) aufgerufen.
+                    if (steckbriefe.lastlink == tmpLink) { // Wenn der letzte gesendete Link gleich dem letzten gespeicherten
+                        steckbriefe.lastlink = item.link; //Speichere den ersten Eintrag des RSS als neuen letzten
+                        safeSteckbriefJSON();
+                    }
+
+                    var getSubject = item.title.split(']');
+                    var documentInformation = getSubject[getSubject.length - 1].split(':');
+                    var documentTitle = documentInformation[0];
+                    var statusUpdate = documentInformation[documentInformation.length - 1];
+                    console.log(getSubject)
+                    var color = getColor(getSubject);
+
+                    isUebung(getSubject, item.link, documentTitle);
+
+                    const message = new Discord.MessageEmbed()
+                        .setTitle(checkStatus(statusUpdate) + " " + getObject(id) + " " + getSubjectFunction(getSubject) + documentTitle)
+                        .setColor(color)
+                        .setURL(item.link)
+                        .setDescription("");
+
+                    client.channels.fetch(steckbriefe.rsschannel).then(function (channel) {
+                        channel.send(getObject(id) + " " + getSubjectFunction(getSubject) + " " + checkStatus(statusUpdate), message)
+
+                    }).catch((error) => {
+                        console.error();
+                    });
+
+                }
+            }
+        });
+    })();
+}
+
+function rssdebug() {
+    (async () => {
+        let feed = await parser.parseURL(steckbriefe.rssurl);
+        var tmpLink = steckbriefe.lastlink; //letzte gesendete URL
+
+        feed.items.some(item => {
+            if (item.link == tmpLink) { //wenn dieser RSS Eintrag == dem letzten gesendeten, dann abbrechen
+                return true;
+            } else {
+                const current_url = new URL(item.link);
+                const search_params = current_url.searchParams;
+                const id = search_params.get('target');
                 if (id.startsWith("file")) {
                     //Folgende Bedingung wird also nur ein mal (nur beim 1. neuen Eintrag) aufgerufen.
                     if (steckbriefe.lastlink == tmpLink) { // Wenn der letzte gesendete Link gleich dem letzten gespeicherten
@@ -359,9 +413,117 @@ function reloadrss() {
                         safeSteckbriefJSON();
                     }
                     sendMessageToChannelID(steckbriefe.rsschannel, item.title + ' : ' + item.link)
-                    console.log("rss: "+ item.title + ' : ' + item.link);
+                    console.log("rss: " + item.title + ' : ' + item.link);
                 }
             }
         });
+
     })();
+}
+
+function checkStatus(status) {
+    status.toString();
+    if (status.startsWith(" Die Datei wurde hinzugefügt") || status.startsWith(" -new_test_online-")) {
+        return ":new:";
+    } else if (status.startsWith(" Die Datei wurde aktualisiert")) {
+        return ":arrows_counterclockwise:";
+    } else {
+        return status;
+    }
+}
+
+function getObject(id) {
+    if (id.startsWith("file")) {
+        return ":file_folder:";
+    } else if (id.startsWith("tst")) {
+        return ":pen_ballpoint:";
+    } else if (id.startsWith("mcst")) {
+        return ":movie_camera:";
+    } else {
+        return "unknown";
+    }
+}
+
+function getSubjectFunction(item) {
+    if (item[0].startsWith("[Mathematik für Ingenieure C1 (Wintersemester 2020/21)")) {
+        return ":abacus:";
+    } else if (item[0].startsWith("[Algorithmen und Datenstrukturen (WS2020/21)")) {
+        return "<:AuD:780701333056913421>";
+    } else if (item[0].startsWith("[Konzeptionelle Modellierung") || item[0].startsWith("[Übungen zu Konzeptionelle Modellierung")) {
+        return "<:KonzMod:778981521868193822>";
+    } else if (item[0].startsWith("[Grundlagen der Technischen Informatik (WS 2020/2021)")) {
+        return "<:GTI:778980917553135616>"
+    } else {
+        return item[0].substring(1);
+    }
+}
+
+function getColor(item) {
+    if (item[0].startsWith("[Mathematik für Ingenieure C1 (Wintersemester 2020/21)")) {
+        return 0xf1c40f;
+    } else if (item[0].startsWith("[Algorithmen und Datenstrukturen (WS2020/21)")) {
+        return 0x3498db;
+    } else if (item[0].startsWith("[Konzeptionelle Modellierung") || item[0].startsWith("[Übungen zu Konzeptionelle Modellierung")) {
+        return 0x9b59b6;
+    } else if (item[0].startsWith("[Grundlagen der Technischen Informatik (WS 2020/2021)")) {
+        return 0xe74c3c;
+    } else {
+        return 0x007eff;
+    }
+}
+
+function isUebung(subjectArray, item, title) {
+    var subject = getSubjectFunction(subjectArray);
+    var getPfad = subjectArray[subjectArray.length - 2].split('>');
+    var fach, since, until, file;
+
+    if (subject === "<:AuD:780701333056913421>") {//if AuD
+        if (getPfad[1].startsWith(" Übungen")) {
+            if (getPfad.length >= 3) {
+                if (title.startsWith(" uebung")) {
+                    fach = subject + " AuD - " + getPfad[2].substring(getPfad[2].length - 2) + ". Übung";
+                    since = "Verfügbar seit: " + getDate(0, 5);
+                    until = "Fällig am: " + getDate(10, 5) + " 10:00 Uhr";
+                    file = "Angabe: " + item;
+                    var message = fach + "\n" + since + "\n" + until + "\n" + file;
+                    sendMessageToChannelID(steckbriefe.rssaufgabenchannel, message)
+                }
+            }
+        }
+    } else if (subject === ":abacus:") {
+        if (getPfad[1].startsWith(" Übungen")) {
+            if (title.startsWith(" Blatt") && title.toString().length <= 12) {
+                fach = subject + " Mathe - " + title.substring(6, 8) + ". Übung";
+                since = "Verfügbar seit: " + getDate(0, 5);
+                until = "Fällig am: " + getDate(14, 5) + " 12:00 Uhr";
+                file = "Angabe: " + item;
+                var message = fach + "\n" + since + "\n" + until + "\n" + file;
+
+                sendMessageToChannelID(steckbriefe.rssaufgabenchannel, message)
+            }
+        }
+    }
+}
+
+function getDate(plusDays, startDay) {
+    var dateUnformatted = new Date(Date.now());
+    var addUntilFinisch = 0;
+    if (startDay !== 0) {
+        addUntilFinisch = startDay - dateUnformatted.getDay();
+    }
+    if (addUntilFinisch < 0) {
+        addUntilFinisch = 7 + addUntilFinisch;
+    }
+
+    var dateSum = new Date(Date.UTC(dateUnformatted.getFullYear(), dateUnformatted.getMonth(), dateUnformatted.getDate() + plusDays + addUntilFinisch));
+    let tag = dateSum.getDate();
+    let tagZahl = dateSum.getDay();
+    let wochentag = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    let monatZahl = dateSum.getMonth();
+    let jahr = dateSum.getFullYear();
+    let stunden = dateSum.getHours();
+    let minuten = dateSum.getMinutes();
+    let text = wochentag[tagZahl] + ', ' + tag + '.' + (monatZahl + 1) + '.' + jahr;
+
+    return text;
 }
