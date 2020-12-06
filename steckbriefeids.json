@@ -1,5 +1,6 @@
 {
     "bottoken": "bottoken",
     "rssurl": "rssurl",
-    "rsschannel": "rsschannel"
+    "rsschannel": "rsschannel",
+    "rssaufgabenchannel": "rssaufgabenchannel"
 }
