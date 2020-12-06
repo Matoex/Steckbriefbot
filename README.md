@@ -6,7 +6,8 @@ Zur beim Inbetriebnehmen muss eine 'steckbriefeids.json'-Datei mit
 {
     "bottoken": "bottoken",
     "rssurl": "rssurl",
-    "rsschannel": "rsschannel"
+    "rsschannel": "rsschannel",
+    "rssaufgabenchannel": "rssaufgabenchannel"
 }
 ```
 existieren.
